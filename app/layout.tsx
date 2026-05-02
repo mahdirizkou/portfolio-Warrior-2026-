@@ -6,6 +6,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
+import PortfolioChatbot from "@/components/PortfolioChatbot";
 
 /* ================= Fonts ================= */
 const inter = Inter({
@@ -164,6 +165,7 @@ export default function RootLayout({
                 <div className="fixed inset-0 z-[100] pointer-events-none opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
 
                 <Providers>{children}</Providers>
+                <PortfolioChatbot />
 
                 <Analytics />
             </body>
