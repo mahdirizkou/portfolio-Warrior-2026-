@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
 
 const SYSTEM_PROMPT = `You are El Mahdi Rizkou's personal AI portfolio assistant — smart, concise, and professional.
@@ -22,75 +22,42 @@ PROJECTS:
 2. YALAH NTLA9AW — React, Tailwind CSS, Django — club & community management platform with real-time WebSockets
 3. React Admin Dashboard — React, Material UI — responsive dashboard with real-time data visualization
 
-JOURNEY:
-- 2022: C, JavaScript, HTML/CSS fundamentals
-- 2023: PHP, OOP, CRUD systems
-- 2024: Node.js, Express, React, modern architectures
-- 2025–2026: AI/ML focus — Django, AWS, Machine Learning, RAG, agentic workflows
-
-GITHUB: 173+ contributions, 20+ repositories, 100% consistency
-
 RULES:
-- Keep answers SHORT: 2–4 sentences max unless a list is clearly needed
-- Never fabricate details not listed above
-- For hiring or collaboration: always redirect to rizkoumahdi73@gmail.com
-- Reply in English or French based on the user's language
-- Politely refuse questions unrelated to El Mahdi's portfolio`;
+- Keep answers SHORT: 2–4 sentences max.
+- Never fabricate details.
+- For hiring: redirect to rizkoumahdi73@gmail.com.
+- Reply in English or French based on the user's language.
+- Politely refuse questions unrelated to El Mahdi's portfolio.`;
 
-interface Message {
-    role: "user" | "assistant";
-    content: string;
-}
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
     try {
-        const { messages }: { messages: Message[] } = await req.json();
+        const { messages } = await req.json();
 
-        if (!Array.isArray(messages) || messages.length === 0) {
-            return NextResponse.json({ error: "No messages provided." }, { status: 400 });
-        }
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            return NextResponse.json({ error: "Gemini API key not configured." }, { status: 500 });
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash-preview-04-17",
-            systemInstruction: SYSTEM_PROMPT,
+        // استدعاء موديل Llama 3
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: SYSTEM_PROMPT,
+                },
+                ...messages,
+            ],
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.7,
+            max_tokens: 500,
         });
 
-        // Filter out the initial assistant greeting — Gemini requires history to start with "user"
-        // Also filter empty messages and map roles (assistant → model)
-        const filtered = messages.filter((m) => m.content.trim().length > 0);
-
-        // Find the index of the first user message
-        const firstUserIndex = filtered.findIndex((m) => m.role === "user");
-
-        if (firstUserIndex === -1) {
-            return NextResponse.json({ error: "No user message found." }, { status: 400 });
-        }
-
-        // Everything before the last message is history
-        const allUserMessages = filtered.slice(firstUserIndex);
-        const lastMessage = allUserMessages[allUserMessages.length - 1];
-
-        // History = all messages from first user message, excluding the last one
-        const history = allUserMessages.slice(0, -1).map((m) => ({
-            role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }],
-        }));
-
-        const chat = model.startChat({ history });
-        const result = await chat.sendMessage(lastMessage.content);
-        const reply = result.response.text().trim();
+        const reply = chatCompletion.choices[0]?.message?.content || "";
 
         return NextResponse.json({ reply });
-    } catch (error) {
-        console.error("Gemini chat route error:", error);
+    } catch (error: any) {
+        console.error("Groq/Llama Error:", error);
         return NextResponse.json(
-            { error: "Failed to get response from Gemini." },
+            { error: "I'm having trouble connecting to Llama 3 right now." },
             { status: 500 }
         );
     }

@@ -63,6 +63,7 @@ export default function PortfolioChatbot() {
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
     const [showQuickQuestions, setShowQuickQuestions] = useState(false);
+    const [showNotification, setShowNotification] = useState(false);
     const hasOpenedOnce = useRef(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -73,10 +74,16 @@ export default function PortfolioChatbot() {
     );
 
     useEffect(() => {
+        const timer = setTimeout(() => setShowNotification(true), 2000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [visibleMessages, loading, open]);
 
     const handleToggle = () => {
+        setShowNotification(false);
         setOpen((current) => {
             const next = !current;
 
@@ -155,8 +162,9 @@ export default function PortfolioChatbot() {
 
     return (
         <div className="fixed bottom-5 right-5 z-[130] sm:bottom-6 sm:right-6">
+            {/* Chat Panel */}
             <AnimatePresence>
-                {open ? (
+                {open && (
                     <motion.div
                         key="chat-panel"
                         initial={{ opacity: 0, y: 18, scale: 0.96 }}
@@ -166,6 +174,7 @@ export default function PortfolioChatbot() {
                         className="mb-4 h-[560px] w-[min(380px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#060606]/95 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
                     >
                         <div className="flex h-full flex-col">
+                            {/* Header */}
                             <div className="border-b border-white/[0.06] bg-white/[0.02] px-5 py-4">
                                 <div className="flex items-center gap-3">
                                     <div className="relative flex h-11 w-11 items-center justify-center rounded-full border border-emerald-400/20 bg-gradient-to-br from-emerald-400/25 to-emerald-500/10 text-sm font-black text-emerald-300 shadow-[0_0_24px_rgba(52,211,153,0.14)]">
@@ -186,20 +195,19 @@ export default function PortfolioChatbot() {
                                 </div>
                             </div>
 
+                            {/* Messages */}
                             <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto px-4 py-4">
                                 {visibleMessages.map((message, index) => (
                                     <div
                                         key={`${message.role}-${index}-${message.content}`}
-                                        className={`flex ${
-                                            message.role === "user" ? "justify-end" : "justify-start"
-                                        }`}
+                                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"
+                                            }`}
                                     >
                                         <div
-                                            className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${
-                                                message.role === "user"
+                                            className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user"
                                                     ? "rounded-br-md bg-gradient-to-br from-[#34d399] to-[#10b981] text-[#032016] shadow-[0_10px_30px_rgba(52,211,153,0.18)]"
                                                     : "rounded-bl-md border border-white/[0.06] bg-white/[0.04] text-zinc-100"
-                                            }`}
+                                                }`}
                                         >
                                             {message.content}
                                         </div>
@@ -225,6 +233,7 @@ export default function PortfolioChatbot() {
                                 <div ref={messagesEndRef} />
                             </div>
 
+                            {/* Input */}
                             <div className="border-t border-white/[0.06] p-4">
                                 <form
                                     onSubmit={(event) => void handleSubmit(event)}
@@ -240,11 +249,10 @@ export default function PortfolioChatbot() {
                                     <button
                                         type="submit"
                                         disabled={!canSend}
-                                        className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all ${
-                                            canSend
+                                        className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all ${canSend
                                                 ? "bg-[#34d399] text-[#032016] shadow-[0_10px_24px_rgba(52,211,153,0.2)] hover:bg-emerald-300"
                                                 : "bg-white/[0.05] text-zinc-600"
-                                        }`}
+                                            }`}
                                         aria-label="Send message"
                                     >
                                         <Send className="h-4 w-4" />
@@ -253,20 +261,76 @@ export default function PortfolioChatbot() {
                             </div>
                         </div>
                     </motion.div>
-                ) : null}
+                )}
             </AnimatePresence>
 
+            {/* Notification Bubble */}
+            <AnimatePresence>
+                {showNotification && !open && (
+                    <motion.div
+                        key="notification"
+                        initial={{ opacity: 0, y: 8, scale: 0.85 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.9 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="absolute bottom-16 right-0 mb-2 w-52 rounded-2xl border border-white/[0.08] bg-[#0d0d0d]/95 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+                    >
+                        {/* Arrow */}
+                        <div className="absolute -bottom-1.5 right-5 h-3 w-3 rotate-45 rounded-sm border-b border-r border-white/[0.08] bg-[#0d0d0d]" />
+
+                        <div className="flex items-start gap-2.5">
+                            <span className="relative mt-0.5 flex h-2 w-2 shrink-0">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-white">Hey there 👋</p>
+                                <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-400">
+                                    Ask me anything about El Mahdi's work & stack!
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowNotification(false);
+                                }}
+                                className="ml-auto shrink-0 text-zinc-600 transition-colors hover:text-zinc-300"
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Toggle Button */}
             <motion.button
                 type="button"
                 onClick={handleToggle}
                 whileTap={{ scale: 0.96 }}
-                className={`flex h-15 w-15 items-center justify-center rounded-full border transition-colors ${
-                    open
+                className={`relative flex h-15 w-15 items-center justify-center rounded-full border transition-colors ${open
                         ? "border-white/[0.06] bg-[#060606] text-white"
                         : "border-emerald-300/20 bg-gradient-to-br from-[#34d399] via-emerald-400 to-[#059669] text-[#032016] shadow-[0_18px_36px_rgba(52,211,153,0.24)]"
-                }`}
+                    }`}
                 aria-label={open ? "Close portfolio chatbot" : "Open portfolio chatbot"}
             >
+                {/* Red badge */}
+                <AnimatePresence>
+                    {showNotification && !open && (
+                        <motion.span
+                            key="badge"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-lg"
+                        >
+                            1
+                        </motion.span>
+                    )}
+                </AnimatePresence>
+
                 <AnimatePresence mode="wait" initial={false}>
                     <motion.span
                         key={open ? "close" : "chat"}
