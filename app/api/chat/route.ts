@@ -1,6 +1,8 @@
 import Groq from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 const SYSTEM_PROMPT = `You are El Mahdi Rizkou's personal AI portfolio assistant — smart, concise, and professional.
 
 IDENTITY:
@@ -29,15 +31,25 @@ RULES:
 - Reply in English or French based on the user's language.
 - Politely refuse questions unrelated to El Mahdi's portfolio.`;
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
     try {
-        const { messages } = await req.json();
 
-        // استدعاء موديل Llama 3
+        const apiKey = process.env.GROQ_API_KEY;
+
+        if (!apiKey) {
+            return NextResponse.json(
+                { error: "Server configuration error (missing API key)." },
+                { status: 500 }
+            );
+        }
+
+
+        const groq = new Groq({ apiKey });
+
+        const body = await req.json();
+        const messages = body.messages || [];
+
+
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
@@ -51,13 +63,19 @@ export async function POST(req: NextRequest) {
             max_tokens: 500,
         });
 
-        const reply = chatCompletion.choices[0]?.message?.content || "";
+        const reply =
+            chatCompletion.choices?.[0]?.message?.content?.trim() ||
+            "No response generated.";
 
         return NextResponse.json({ reply });
+
     } catch (error: any) {
         console.error("Groq/Llama Error:", error);
+
         return NextResponse.json(
-            { error: "I'm having trouble connecting to Llama 3 right now." },
+            {
+                error: "I'm having trouble connecting to Llama 3 right now.",
+            },
             { status: 500 }
         );
     }
